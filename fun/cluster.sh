@@ -18,7 +18,7 @@ else
     echo Cluster $fargatecluster not found creating
     sed "s/  name:.*/  name: $fargatecluster/" fargate.yaml >/tmp/$fargatecluster-$$.yaml
     eksctl create cluster -f  /tmp/$fargatecluster-$$.yaml  --kubeconfig kubeconfig
-    rm /tmp/$fargatecluster-$$.yam
+    rm /tmp/$fargatecluster-$$.yaml
     kubectl create ns nginx --kubeconfig kubeconfig
 fi
 
