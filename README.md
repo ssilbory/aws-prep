@@ -1,4 +1,4 @@
-Request:
+Lab objective:
 - Create a Ubuntu server running nginx with static home page with a custom greeting in EC2 behind a LB.
 - This should be done with a single command and you should be able to run the command repeatably.
 
