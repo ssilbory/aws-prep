@@ -32,7 +32,7 @@ resource "aws_subnet" "default" {
 
 # A security group for the ELB so it is accessible via the web
 resource "aws_security_group" "elb" {
-  name        = "terraform_example_elb"
+  name        = "nginx_elb"
   description = "Used in the terraform"
   vpc_id      = aws_vpc.default.id
 
@@ -60,14 +60,6 @@ resource "aws_security_group" "default" {
   description = "Used in the terraform"
   vpc_id      = aws_vpc.default.id
 
-  # SSH access from anywhere
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   # HTTP access from the VPC
   ingress {
     from_port   = 80
@@ -85,6 +77,11 @@ resource "aws_security_group" "default" {
   }
 }
 
+data "template_file" "user_data" {
+  template = file("install_nginx.sh")
+}
+
+
 resource "aws_elb" "web" {
   name = "terraform-example-elb"
 
@@ -100,32 +97,15 @@ resource "aws_elb" "web" {
   }
 }
 
-resource "aws_key_pair" "auth" {
-  key_name   = var.key_name
-  public_key = file(var.public_key_path)
-}
-
 resource "aws_instance" "web" {
-  # The connection block tells our provisioner how to
-  # communicate with the resource (instance)
-  connection {
-    type = "ssh"
-    # The default username for our AMI
-    user = "ubuntu"
-    host = self.public_ip
-    # The connection will use the local SSH agent for authentication.
-  }
 
-  instance_type = "t2.micro"
+  instance_type = "t3a.micro"
 
   # Lookup the correct AMI based on the region
   # we specified
   ami = var.aws_amis[var.aws_region]
 
-  # The name of our SSH keypair we created above.
-  key_name = aws_key_pair.auth.id
-
-  # Our Security group to allow HTTP and SSH access
+  # Our Security group to allow HTTP access
   vpc_security_group_ids = [aws_security_group.default.id]
 
   # We're going to launch into the same subnet as our ELB. In a production
@@ -133,14 +113,39 @@ resource "aws_instance" "web" {
   # backend instances.
   subnet_id = aws_subnet.default.id
 
-  # We run a remote provisioner on the instance after creating it.
-  # In this case, we just install nginx and start it. By default,
-  # this should be on port 80
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get -y update",
-      "sudo apt-get -y install nginx",
-      "sudo service nginx start",
-    ]
+  # use user data to install things
+  user_data = data.template_file.user_data.rendered
+  
+  # The name of our SSH keypair we created above.
+  #key_name = aws_key_pair.auth.id
+
+  # Don't use ssh use ssm
+  iam_instance_profile = aws_iam_instance_profile.ec2_ssm_instance_profile.name
+}
+
+
+resource "aws_iam_role" "ec2_ssm_role" {
+  name = "ec2-ssm-role"
+  assume_role_policy = data.aws_iam_policy_document.instance_assume_role_policy.json
+}
+ 
+data "aws_iam_policy_document" "instance_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+ 
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
   }
+}
+ 
+resource "aws_iam_instance_profile" "ec2_ssm_instance_profile" {
+  name = "ec2-ssm-profile"
+  role = aws_iam_role.ec2_ssm_role.name
+}
+ 
+resource "aws_iam_role_policy_attachment" "ec2_ssm_role_policy_attachment" {
+  role       = aws_iam_role.ec2_ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
