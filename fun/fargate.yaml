@@ -1,0 +1,19 @@
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: fargate-cluster
+  region: us-west-2
+
+nodeGroups:
+  - name: ng-1
+    instanceType: t3a.medium
+    desiredCapacity: 1
+
+fargateProfiles:
+  - name: nginx
+    selectors:
+      - namespace: nginx
+        labels:
+          env: fg
