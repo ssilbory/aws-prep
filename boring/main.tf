@@ -54,7 +54,7 @@ resource "aws_security_group" "elb" {
 }
 
 # Our default security group to access
-# the instances over SSH and HTTP
+# the instances HTTP
 resource "aws_security_group" "default" {
   name        = "terraform_example"
   description = "Used in the terraform"
@@ -116,9 +116,6 @@ resource "aws_instance" "web" {
   # use user data to install things
   user_data = data.template_file.user_data.rendered
   
-  # The name of our SSH keypair we created above.
-  #key_name = aws_key_pair.auth.id
-
   # Don't use ssh use ssm
   iam_instance_profile = aws_iam_instance_profile.ec2_ssm_instance_profile.name
 }
