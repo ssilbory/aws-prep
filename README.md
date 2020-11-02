@@ -8,7 +8,7 @@ Thoughts:
   - I'm not familiar with CF so terraform is the logical choice.
   - Terraform is mentioned so it's the obvious correct choice.
 - Honestly this seems like I could take an example terraform, change the ami, change the payload, and call it a day.
-- It would be more interesting and job relevant to do this eks in fargate
+- It would be more interesting and relevant would be to do this eks in fargate
 - Honestly it would be cheaper, and better in every way to just use S3 for the static page, but obviously this is a stand in for a more complex payload.
 
 
