@@ -13,7 +13,10 @@ terraform apply
 For example:
 
 ```
+terraform init
 terraform apply 
+<examine result>
+terraform destroy
 ```
 
 
